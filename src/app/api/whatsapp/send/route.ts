@@ -5,11 +5,7 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
-import {
-  sendMessageToConversation,
-  validateSendMessageParams,
-  SendMessageError,
-} from '@/lib/whatsapp/send-message'
+import { validateSendMessageParams, SendMessageError } from '@/lib/whatsapp/send-message'
 import {
   hasEvolutionConfig,
   sendEvolutionMessageToConversation,
@@ -90,6 +86,13 @@ export async function POST(request: Request) {
             'Either conversation_id or contact_id, plus message_type, are required',
         },
         { status: 400 }
+      )
+    }
+
+    if (!['text', 'image', 'video', 'document', 'audio'].includes(message_type)) {
+      return NextResponse.json(
+        { error: 'A Evolution API aceita texto e mídia neste Inbox.' },
+        { status: 400 },
       )
     }
 
@@ -189,9 +192,17 @@ export async function POST(request: Request) {
         interactivePayload: interactive_payload,
         replyToMessageId: reply_to_message_id,
       }
-      const result = await hasEvolutionConfig(supabase, accountId)
-        ? await sendEvolutionMessageToConversation(supabase, accountId, sendParams)
-        : await sendMessageToConversation(supabase, accountId, sendParams)
+      if (!(await hasEvolutionConfig(supabase, accountId))) {
+        throw new SendMessageError(
+          'whatsapp_not_configured',
+          'Conecte a Evolution API nas configurações antes de enviar mensagens.',
+          400,
+        )
+      }
+      const result = await sendEvolutionMessageToConversation(supabase, accountId, {
+        ...sendParams,
+        sentByType: 'human',
+      })
 
       return NextResponse.json({
         success: true,

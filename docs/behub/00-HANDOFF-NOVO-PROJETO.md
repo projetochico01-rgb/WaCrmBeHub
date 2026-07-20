@@ -27,15 +27,19 @@ O wacrm substituira o CRM antigo como interface e modelo principal. O canal Meta
 - TypeScript, build e 648 testes passaram.
 - Fila humana e historico imutavel de observacoes estao ligados ao Inbox.
 - Skill `behub-commercial` preparada em `docs/hermes-skill/behub-commercial`.
+- Envio do Inbox e da API publica usa somente Evolution; templates, disparos,
+  automacoes e fluxos herdados da Meta estao ocultos e bloqueados no proxy.
+- A cadencia nao roda na Vercel, no Supabase nem no n8n: o Hermes consulta e
+  executa as etapas usando exclusivamente `/api/v1/hermes`.
 
 ## Proximos passos obrigatorios
 
-1. Publicar a alteracao que inclui a migracao 038 e as ferramentas de cadencia do Hermes.
-2. Criar a primeira conta proprietaria do CRM.
-3. Cadastrar URL, chave e instancia Evolution na tela de configuracoes do CRM.
-4. Vincular o numero pelo QR Code exibido no proprio CRM.
-5. Criar chave `hermes:operate`, instalar a skill no Hermes e criar o cron nativo com pre-check.
-6. Executar teste ponta a ponta no numero autorizado.
+1. Criar a primeira conta proprietaria do CRM.
+2. Cadastrar URL, chave e instancia Evolution na tela de configuracoes do CRM.
+3. Vincular o numero pelo QR Code exibido no proprio CRM.
+4. Criar chave `hermes:operate` e entregar a ordem para o Hermes instalar a
+   skill e criar/testar o cron nativo com pre-check.
+5. Executar teste ponta a ponta no numero autorizado.
 
 ## Regra de continuidade
 

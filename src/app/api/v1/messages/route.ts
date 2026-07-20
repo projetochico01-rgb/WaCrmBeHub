@@ -34,11 +34,8 @@
 import { requireApiKey } from '@/lib/auth/api-context';
 import { ok, fail, toApiErrorResponse } from '@/lib/api/v1/respond';
 import { resolveConversationByPhone } from '@/lib/whatsapp/resolve-conversation';
-import {
-  sendMessageToConversation,
-  validateSendMessageParams,
-  SendMessageError,
-} from '@/lib/whatsapp/send-message';
+import { validateSendMessageParams, SendMessageError } from '@/lib/whatsapp/send-message';
+import { hasEvolutionConfig, sendEvolutionMessageToConversation } from '@/lib/evolution/send-message';
 import type { InteractiveMessagePayload } from '@/lib/whatsapp/interactive';
 
 export async function POST(request: Request) {
@@ -59,6 +56,9 @@ export async function POST(request: Request) {
     }
 
     const type = typeof body.type === 'string' ? body.type : 'text';
+    if (!['text', 'image', 'video', 'document', 'audio'].includes(type)) {
+      return fail('unsupported', 'Evolution API supports text and media messages in this endpoint', 400);
+    }
 
     // Unpack the optional `template` object into the flat params the
     // send core expects. `params` as an array → legacy positional body
@@ -105,7 +105,14 @@ export async function POST(request: Request) {
       typeof body.name === 'string' ? body.name : null
     );
 
-    const result = await sendMessageToConversation(
+    if (!(await hasEvolutionConfig(ctx.supabase, ctx.accountId))) {
+      throw new SendMessageError(
+        'whatsapp_not_configured',
+        'Evolution API is not configured for this account',
+        400,
+      );
+    }
+    const result = await sendEvolutionMessageToConversation(
       ctx.supabase,
       ctx.accountId,
       {
@@ -124,6 +131,7 @@ export async function POST(request: Request) {
           typeof body.reply_to_message_id === 'string'
             ? body.reply_to_message_id
             : null,
+        sentByType: 'system',
       }
     );
 

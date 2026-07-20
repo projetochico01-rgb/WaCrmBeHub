@@ -42,6 +42,35 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
+  // BeHub is Evolution-only. Keep the inherited Meta modules unreachable,
+  // including direct URLs and API calls that bypass the sidebar.
+  const pathname = request.nextUrl.pathname
+  const retiredPages = ['/broadcasts', '/automations', '/flows']
+  if (retiredPages.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
+    return withRefreshedCookies(NextResponse.redirect(url))
+  }
+
+  const retiredApiPaths = [
+    '/api/whatsapp/broadcast',
+    '/api/whatsapp/config',
+    '/api/whatsapp/media',
+    '/api/whatsapp/react',
+    '/api/whatsapp/templates',
+    '/api/whatsapp/webhook',
+    '/api/v1/broadcasts',
+    '/api/automations',
+    '/api/flows',
+  ]
+  if (retiredApiPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    return withRefreshedCookies(NextResponse.json(
+      { error: 'Recurso desativado na operação BeHub. Use Hermes com Evolution API.' },
+      { status: 410 },
+    ))
+  }
+
   // Auth pages - redirect to dashboard if already logged in.
   // Exception: when an invite token is in the query string we
   // send the already-signed-in user to /join/<token> instead so
@@ -70,7 +99,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Protected pages - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
+  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/settings']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
