@@ -19,26 +19,20 @@ O wacrm substituira o CRM antigo como interface e modelo principal. O canal Meta
 - Repositorio novo clonado e vinculado ao remoto correto.
 - `.env.local` criado e ignorado pelo Git.
 - URL e chave publica do Supabase preenchidas.
-- Chave `service_role`, chave de criptografia e credenciais da Evolution ainda pendentes.
-- Ainda nao foi confirmado se as 36 migracoes foram aplicadas no Supabase novo.
-- O wacrm original envia e recebe pela Meta; a adaptacao Evolution ainda nao foi implementada.
-- TypeScript passou na copia analisada.
-- Lint passou com avisos.
-- A suite analisada teve 619 testes aprovados e 5 falhas ligadas a data/moeda no ambiente brasileiro.
+- Evolution API 2.3.7 implementada sem n8n: configuracao, QR Code, envio, recebimento e status.
+- Inbox identifica `Diana — IA`, `Humano` e `Sistema`.
+- Modo de teste limita entrada e saida a `+5547988976484`.
+- 37 migracoes prontas; execucao no Supabase aguarda confirmacao final do proprietario.
+- Vercel conectada ao GitHub; a implantacao anterior falhou porque faltavam variaveis do Supabase.
+- TypeScript, build e os 645 testes passaram; lint sem erros.
 
 ## Proximos passos obrigatorios
 
-1. Obter de forma segura a chave `service_role` do Supabase novo.
-2. Gerar e armazenar `ENCRYPTION_KEY` sem publica-la no Git.
-3. Confirmar que as 36 migracoes foram aplicadas no Supabase `WaCrmBeHub`.
-4. Obter URL, chave e nome da instancia Evolution na VPS.
-5. Ler a documentacao do Next.js incluida em `node_modules/next/dist/docs/` antes de modificar codigo.
-6. Criar interface de provedor de mensagens e adaptador Evolution 2.3.7.
-7. Substituir a tela Meta por conexao Evolution com estado da instancia e QR Code dentro do CRM.
-8. Implementar inbox bidirecional: receber, persistir, exibir e responder pelo CRM.
-9. Implementar controle Diana/humano, fila e opt-out.
-10. Criar as ferramentas restritas do Hermes e o pacote de atualizacao correspondente.
-11. Testar somente com `+5547988976484`.
+1. Executar as 37 migracoes no Supabase `WaCrmBeHub`.
+2. Salvar as variaveis protegidas na Vercel e publicar o codigo novo.
+3. Cadastrar URL, chave e instancia Evolution na tela de configuracoes do CRM.
+4. Vincular o numero pelo QR Code exibido no proprio CRM.
+5. Concluir ferramentas restritas do Hermes, fila, cadencia e teste ponta a ponta.
 
 ## Regra de continuidade
 

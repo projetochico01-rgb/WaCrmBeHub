@@ -269,6 +269,13 @@ export function MessageBubble({
 
   const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
   const time = format(new Date(message.created_at), "HH:mm");
+  const authorLabel = message.sent_by_type === "system"
+    ? "Sistema"
+    : message.sent_by_type === "diana" || message.ai_generated
+      ? "Diana — IA"
+      : isAgent
+        ? "Humano"
+        : null;
 
   // Row alignment + width cap are owned by <MessageActions> so its hover
   // group matches the bubble's content area, not the full row.
@@ -287,6 +294,11 @@ export function MessageBubble({
             : "rounded-bl-md bg-muted text-foreground",
         )}
       >
+        {authorLabel && (
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide opacity-75">
+            {authorLabel}
+          </div>
+        )}
         {reply && (
           <ReplyQuote
             authorLabel={reply.authorLabel}
@@ -311,7 +323,7 @@ export function MessageBubble({
               title={t("aiBadgeTitle")}
             >
               <Sparkles className="h-2.5 w-2.5" />
-              {t("aiBadge")}
+              Diana — IA
             </span>
           )}
           <span

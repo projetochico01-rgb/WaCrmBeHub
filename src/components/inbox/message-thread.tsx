@@ -456,6 +456,7 @@ export function MessageThread({
         id: tempId,
         conversation_id: conversation.id,
         sender_type: "agent",
+        sent_by_type: "human",
         content_type: "text",
         content_text: text,
         status: "sending",

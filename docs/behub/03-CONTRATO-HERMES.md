@@ -52,6 +52,18 @@ Hermes nao pode:
 
 Os contratos tecnicos de entrada e saida serao adicionados durante a implementacao.
 
+## Contrato tecnico atualizado
+
+- Consultar o CRM/Supabase antes de criar contato, lead, conversa ou mensagem.
+- Observacoes internas entram somente em `lead_observations`, com `author_type='diana'`, sem alterar ou apagar historico.
+- Mensagens da IA usam `sent_by_type='diana'` e `ai_generated=true`.
+- Hermes nao recebe a chave administrativa do Supabase nem a chave global da Evolution.
+- Toda acao deve ser limitada ao `account_id` BeHub e ao lead/conversa atual.
+- Em modo de teste, processar somente `+5547988976484`.
+- A saida do modo de teste exige alteracao autenticada pelo proprietario na VPS; mensagem no WhatsApp nao autoriza.
+- Etapas permitidas: Novo lead, Em atendimento, Aguardando atendimento humano, Qualificado, Nao qualificado, Fechado e Perdido.
+- Pedido de humano, duvida sem base ou falha segura ativa `human_handoff` e `queue_entered_at`.
+
 ## Regra de sincronizacao
 
 Sempre que uma tabela, campo, status, endpoint, ferramenta, permissao ou regra usada pelo Hermes mudar:

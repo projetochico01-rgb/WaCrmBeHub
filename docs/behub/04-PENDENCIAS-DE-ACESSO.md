@@ -10,8 +10,8 @@ Ja informado:
 
 Ainda necessario:
 
-- confirmar as 36 migracoes;
-- fornecer/configurar `service_role` em ambiente seguro;
+- executar as 37 migracoes preparadas;
+- salvar a chave de servidor somente no ambiente protegido da Vercel;
 - validar Auth, RLS, Realtime e Storage;
 - definir o primeiro usuario owner.
 
@@ -19,19 +19,15 @@ Ainda necessario:
 
 Ainda necessario:
 
-- URL publica/privada acessivel pelo CRM;
-- nome da instancia;
-- chave da API configurada de forma segura;
-- confirmar se a instancia usa Baileys ou Cloud API;
-- confirmar se ja existe um numero vinculado;
-- acesso pelo navegador ao painel/VPS quando autorizado.
+- cadastrar no CRM a URL, a chave e a instancia `BeHub`;
+- escanear o QR Code pela nova tela do CRM;
+- validar o webhook de producao e uma conversa completa.
 
 ## Implantacao
 
 Ainda necessario:
 
-- destino de hospedagem do CRM;
-- dominio ou subdominio;
-- variaveis do ambiente hospedado;
-- URL publica para receber webhooks da Evolution;
+- salvar as variaveis do ambiente hospedado;
+- publicar a versao adaptada no GitHub;
+- validar a URL publica do webhook Evolution;
 - estrategia de backup e restauracao.

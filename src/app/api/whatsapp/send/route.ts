@@ -10,6 +10,10 @@ import {
   validateSendMessageParams,
   SendMessageError,
 } from '@/lib/whatsapp/send-message'
+import {
+  hasEvolutionConfig,
+  sendEvolutionMessageToConversation,
+} from '@/lib/evolution/send-message'
 
 // The dashboard's outbound-send endpoint. It owns auth, per-user rate
 // limiting, and the two ways the UI targets a thread — an existing
@@ -172,7 +176,7 @@ export async function POST(request: Request) {
     // `SendMessageError` carries a machine code + HTTP status; the
     // dashboard maps it to the internal `{ error }` shape.
     try {
-      const result = await sendMessageToConversation(supabase, accountId, {
+      const sendParams = {
         conversationId,
         messageType: message_type,
         contentText: content_text,
@@ -184,7 +188,10 @@ export async function POST(request: Request) {
         templateMessageParams: template_message_params,
         interactivePayload: interactive_payload,
         replyToMessageId: reply_to_message_id,
-      })
+      }
+      const result = await hasEvolutionConfig(supabase, accountId)
+        ? await sendEvolutionMessageToConversation(supabase, accountId, sendParams)
+        : await sendMessageToConversation(supabase, accountId, sendParams)
 
       return NextResponse.json({
         success: true,

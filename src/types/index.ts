@@ -252,6 +252,11 @@ export interface Message {
    * badge in the inbox. Migration 033.
    */
   ai_generated?: boolean;
+  /** Identidade operacional exibida no Inbox da BeHub. */
+  sent_by_type?: 'diana' | 'human' | 'system' | null;
+  provider?: 'meta' | 'evolution' | string;
+  provider_instance?: string | null;
+  external_message_id?: string | null;
 }
 
 export type ReactionActor = 'customer' | 'agent';

@@ -1,0 +1,77 @@
+{
+  "LoginPage": {
+    "titleAccept": "Entre para aceitar",
+    "titleWelcome": "Bem-vindo de volta",
+    "descAccept": "Entre e levaremos você ao convite.",
+    "descWelcome": "Entre na sua conta",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "voce@exemplo.com",
+    "passwordLabel": "Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "passwordPlaceholder": "Digite sua senha",
+    "signingIn": "Entrando...",
+    "signIn": "Entrar",
+    "noAccount": "Ainda não tem uma conta?",
+    "createAccount": "Criar conta"
+  },
+  "Sidebar": {
+    "title": "CRM Comercial BeHub",
+    "dashboard": "Painel",
+    "inbox": "Caixa de entrada",
+    "notifications": "Notificações",
+    "contacts": "Contatos",
+    "pipelines": "Funil comercial",
+    "broadcasts": "Campanhas",
+    "automations": "Automações",
+    "flows": "Fluxos",
+    "aiAgents": "Agentes de IA",
+    "settings": "Configurações",
+    "beta": "Beta",
+    "roleOwner": "Proprietário",
+    "roleAdmin": "Administrador",
+    "roleAgent": "Atendente",
+    "roleViewer": "Visualizador",
+    "closeMenu": "Fechar menu",
+    "defaultUser": "Usuário",
+    "defaultAvatar": "Avatar",
+    "menuProfile": "Perfil",
+    "menuSettings": "Configurações",
+    "menuSignOut": "Sair"
+  },
+  "Header": {
+    "dashboard": "Painel",
+    "inbox": "Caixa de entrada",
+    "notifications": "Notificações",
+    "contacts": "Contatos",
+    "pipelines": "Funil comercial",
+    "broadcasts": "Campanhas",
+    "automations": "Automações",
+    "settings": "Configurações",
+    "openMenu": "Abrir menu",
+    "openAccountMenu": "Abrir menu da conta",
+    "defaultUser": "Usuário",
+    "defaultAvatar": "Avatar",
+    "menuProfile": "Perfil",
+    "menuSettings": "Configurações",
+    "menuSignOut": "Sair"
+  },
+  "Dashboard": {
+    "page": {
+      "title": "Painel",
+      "description": "Visão ao vivo das conversas, contatos, oportunidades e automações.",
+      "activeConversations": "Conversas ativas",
+      "newContactsToday": "Novos contatos hoje",
+      "openDealsValue": "Valor em oportunidades",
+      "messagesSentToday": "Mensagens enviadas hoje",
+      "newTodayVsYesterday": "novos hoje em comparação a ontem",
+      "vsYesterday": "em comparação a ontem",
+      "noChange": "Sem alteração {suffix}"
+    },
+    "quickActions": {
+      "newContact": "Novo contato",
+      "newDeal": "Nova oportunidade",
+      "newBroadcast": "Nova campanha",
+      "newAutomation": "Nova automação"
+    }
+  }
+}
