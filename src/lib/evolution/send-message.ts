@@ -74,7 +74,8 @@ export async function sendEvolutionMessageToConversation(
     external_message_id: externalId,
     provider: "evolution",
     provider_instance: row.instance_name,
-    sent_by_type: "human",
+    sent_by_type: params.sentByType || "human",
+    ai_generated: params.sentByType === "diana",
     status: "sent",
     reply_to_message_id: params.replyToMessageId || null,
   }).select("id").single();

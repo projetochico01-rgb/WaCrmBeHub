@@ -84,6 +84,7 @@ export interface SendMessageParams {
   /** Structured payload for `messageType === 'interactive'`. */
   interactivePayload?: InteractiveMessagePayload | null;
   replyToMessageId?: string | null;
+  sentByType?: 'diana' | 'human' | 'system';
 }
 
 export interface SendMessageResult {
