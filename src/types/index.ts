@@ -181,6 +181,29 @@ export interface Conversation {
   ai_autoreply_disabled?: boolean;
   ai_reply_count?: number;
   ai_handoff_summary?: string | null;
+  /** Fila operacional BeHub (migration 037). */
+  human_handoff?: boolean;
+  handoff_requested_at?: string | null;
+  handoff_reason?: string | null;
+  queue_entered_at?: string | null;
+  ai_enabled?: boolean;
+  automation_contact_allowed?: boolean;
+  do_not_contact_at?: string | null;
+  do_not_contact_reason?: string | null;
+}
+
+export interface LeadObservation {
+  id: string;
+  account_id: string;
+  contact_id: string;
+  deal_id?: string | null;
+  conversation_id?: string | null;
+  author_type: 'diana' | 'human' | 'system';
+  author_user_id?: string | null;
+  observation_type: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
 }
 
 // ============================================================

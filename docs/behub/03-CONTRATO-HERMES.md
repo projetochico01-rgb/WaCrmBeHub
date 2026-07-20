@@ -36,21 +36,25 @@ Hermes nao pode:
 - usar dados de um cliente em outro atendimento;
 - prometer economia ou elegibilidade sem criterios confirmados.
 
-## Ferramentas previstas
+## Ferramentas implementadas em `/api/v1/hermes`
 
-- `behub_buscar_lead`
-- `behub_registrar_observacao`
-- `behub_atualizar_dados_lead`
-- `behub_solicitar_mudanca_etapa`
-- `behub_enviar_para_fila_humana`
-- `behub_registrar_optout`
-- `behub_registrar_fatura`
-- `behub_registrar_analise_preliminar`
-- `behub_agendar_followup`
-- `behub_cancelar_followup`
-- `behub_enviar_mensagem`
+- `buscar_lead`
+- `registrar_observacao`
+- `atualizar_dados_lead`
+- `solicitar_mudanca_etapa`
+- `enviar_para_fila_humana`
+- `registrar_optout`
+- `enviar_mensagem`
+- `listar_followups_pendentes`
+- `executar_followup`
 
-Os contratos tecnicos de entrada e saida serao adicionados durante a implementacao.
+Os contratos completos estao em `docs/hermes-skill/behub-commercial/references/api.md`.
+
+## Poder do Hermes na cadencia
+
+Hermes e o orquestrador. Seu cron nativo roda a cada 5 minutos com `cadence_precheck.py`; o modelo so acorda quando existe follow-up vencido. A sessao recebe a skill `behub-commercial` e somente os toolsets minimos necessarios. O Supabase nao agenda mensagens e a Vercel nao possui cron para esse processo.
+
+O backend mantem a autoridade final para impedir envio duplicado, fora de horario, apos opt-out, durante handoff, antes do vencimento ou fora do numero de teste.
 
 ## Contrato tecnico atualizado
 

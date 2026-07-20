@@ -1,0 +1,4 @@
+interface:
+  display_name: "BeHub Comercial"
+  short_description: "Opera leads, cadência e handoff da BeHub"
+  default_prompt: "Use $behub-commercial para atender e acompanhar os leads da BeHub com segurança."

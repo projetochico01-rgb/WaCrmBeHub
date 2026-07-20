@@ -44,7 +44,7 @@ const STATUS_COLORS: Record<ConversationStatus, string> = {
 
 
 
-type InboxFilter = ConversationStatus | "all" | "unread";
+type InboxFilter = ConversationStatus | "all" | "unread" | "human_queue";
 
 export function ConversationList({
   activeConversationId,
@@ -58,6 +58,7 @@ export function ConversationList({
   const FILTER_OPTIONS: { label: string; value: InboxFilter }[] = useMemo(() => [
     { label: t("filterAll"), value: "all" },
     { label: t("filterUnread"), value: "unread" },
+    { label: "Fila humana", value: "human_queue" },
     { label: t("filterOpen"), value: "open" },
     { label: t("filterPending"), value: "pending" },
     { label: t("filterClosed"), value: "closed" },
@@ -161,7 +162,9 @@ export function ConversationList({
   const filtered = useMemo(() => {
     let result = conversations;
 
-    if (filter === "unread") {
+    if (filter === "human_queue") {
+      result = result.filter((c) => c.human_handoff && !c.assigned_agent_id);
+    } else if (filter === "unread") {
       result = result.filter((c) => c.unread_count > 0);
     } else if (filter !== "all") {
       result = result.filter((c) => c.status === filter);
@@ -187,7 +190,17 @@ export function ConversationList({
       });
     }
 
-    return result;
+    return [...result].sort((a, b) => {
+      // Solicitações humanas não atribuídas sempre ficam no topo; dentro da
+      // fila, a mais antiga vem primeiro para ninguém ficar esquecido.
+      const aQueued = Boolean(a.human_handoff && !a.assigned_agent_id);
+      const bQueued = Boolean(b.human_handoff && !b.assigned_agent_id);
+      if (aQueued !== bQueued) return aQueued ? -1 : 1;
+      if (aQueued && bQueued) {
+        return new Date(a.queue_entered_at ?? 0).getTime() - new Date(b.queue_entered_at ?? 0).getTime();
+      }
+      return new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime();
+    });
   }, [conversations, filter, search, selectedTagIds, selectedCompany]);
 
   const toggleTag = useCallback((id: string) => {
@@ -474,9 +487,16 @@ function ConversationItem({
       {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-medium text-foreground">
-            {displayName}
-          </span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-foreground">
+              {displayName}
+            </span>
+            {conversation.human_handoff && !conversation.assigned_agent_id && (
+              <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                Fila humana
+              </span>
+            )}
+          </div>
           <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo}</span>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">

@@ -98,6 +98,9 @@ export async function POST(request: Request) {
     unread_count: fromMe ? 0 : 1,
     status: "open",
     updated_at: new Date().toISOString(),
+    ...(fromMe
+      ? { cadence_due_at: null, cadence_completed_at: new Date().toISOString() }
+      : { cadence_step: 0, cadence_due_at: null, cadence_last_inbound_at: new Date().toISOString(), cadence_completed_at: null }),
   }).eq("id", conversation.id);
   await db.from("evolution_config").update({ last_event_at: new Date().toISOString() }).eq("account_id", config.account_id);
   return NextResponse.json({ received: true });

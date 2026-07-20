@@ -22,17 +22,20 @@ O wacrm substituira o CRM antigo como interface e modelo principal. O canal Meta
 - Evolution API 2.3.7 implementada sem n8n: configuracao, QR Code, envio, recebimento e status.
 - Inbox identifica `Diana — IA`, `Humano` e `Sistema`.
 - Modo de teste limita entrada e saida a `+5547988976484`.
-- 37 migracoes prontas; execucao no Supabase aguarda confirmacao final do proprietario.
-- Vercel conectada ao GitHub; a implantacao anterior falhou porque faltavam variaveis do Supabase.
-- TypeScript, build e os 645 testes passaram; lint sem erros.
+- Migracoes 001 a 037 aplicadas no Supabase; a 038 de controle de cadencia foi aplicada em 20/07/2026.
+- Vercel conectada ao GitHub, variaveis protegidas salvas e producao acessivel em `https://wa-crm-be-hub.vercel.app`.
+- TypeScript, build e 648 testes passaram.
+- Fila humana e historico imutavel de observacoes estao ligados ao Inbox.
+- Skill `behub-commercial` preparada em `docs/hermes-skill/behub-commercial`.
 
 ## Proximos passos obrigatorios
 
-1. Executar as 37 migracoes no Supabase `WaCrmBeHub`.
-2. Salvar as variaveis protegidas na Vercel e publicar o codigo novo.
+1. Publicar a alteracao que inclui a migracao 038 e as ferramentas de cadencia do Hermes.
+2. Criar a primeira conta proprietaria do CRM.
 3. Cadastrar URL, chave e instancia Evolution na tela de configuracoes do CRM.
 4. Vincular o numero pelo QR Code exibido no proprio CRM.
-5. Concluir ferramentas restritas do Hermes, fila, cadencia e teste ponta a ponta.
+5. Criar chave `hermes:operate`, instalar a skill no Hermes e criar o cron nativo com pre-check.
+6. Executar teste ponta a ponta no numero autorizado.
 
 ## Regra de continuidade
 

@@ -3,14 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
-import type { Contact, Deal, ContactNote, Tag } from "@/types";
+import type { Contact, Deal, LeadObservation, Tag } from "@/types";
 import {
   Phone,
   Mail,
   Copy,
   Check,
-  User,
   Tag as TagIcon,
   DollarSign,
   StickyNote,
@@ -32,7 +30,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
   const { accountId } = useAuth();
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [notes, setNotes] = useState<ContactNote[]>([]);
+  const [notes, setNotes] = useState<LeadObservation[]>([]);
   const [tags, setTags] = useState<(Tag & { contact_tag_id: string })[]>([]);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
@@ -50,7 +48,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
         .eq("contact_id", contact.id)
         .order("created_at", { ascending: false }),
       supabase
-        .from("contact_notes")
+        .from("lead_observations")
         .select("*")
         .eq("contact_id", contact.id)
         .order("created_at", { ascending: false }),
@@ -102,12 +100,14 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
     const user = session?.user;
 
     const { data, error } = await supabase
-      .from("contact_notes")
+        .from("lead_observations")
       .insert({
         contact_id: contact.id,
         account_id: accountId,
-        user_id: user?.id,
-        note_text: newNote.trim(),
+        author_type: "human",
+        author_user_id: user?.id,
+        observation_type: "note",
+        content: newNote.trim(),
       })
       .select()
       .single();
@@ -286,11 +286,18 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                     className="rounded-lg bg-muted px-3 py-2"
                   >
                     <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                      {note.note_text}
+                      {note.content}
                     </p>
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      {format(new Date(note.created_at), "MMM d, yyyy HH:mm")}
-                    </p>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                      <span>
+                        {note.author_type === "diana"
+                          ? "Diana — IA"
+                          : note.author_type === "human"
+                            ? "Humano"
+                            : "Sistema"}
+                      </span>
+                      <span>{format(new Date(note.created_at), "dd/MM/yyyy HH:mm")}</span>
+                    </div>
                   </div>
                 ))}
               </div>

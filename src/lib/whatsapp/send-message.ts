@@ -85,6 +85,8 @@ export interface SendMessageParams {
   interactivePayload?: InteractiveMessagePayload | null;
   replyToMessageId?: string | null;
   sentByType?: 'diana' | 'human' | 'system';
+  /** O Hermes usa false ao executar um passo de uma cadencia ja existente. */
+  scheduleCadence?: boolean;
 }
 
 export interface SendMessageResult {

@@ -3,6 +3,7 @@ import { ok, fail, toApiErrorResponse } from "@/lib/api/v1/respond";
 import { findExistingContact } from "@/lib/contacts/dedupe";
 import { sanitizePhoneForMeta } from "@/lib/whatsapp/phone-utils";
 import { sendEvolutionMessageToConversation } from "@/lib/evolution/send-message";
+import { isBehubCommercialTime, nextBehubCommercialTime } from "@/lib/behub/business-hours";
 
 const STAGES = [
   "Novo lead", "Em atendimento", "Aguardando atendimento humano",
@@ -18,6 +19,29 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null) as Body | null;
     if (!body) return fail("bad_request", "Corpo JSON obrigatório", 400);
     const action = str(body.action);
+
+    if (action === "listar_followups_pendentes") {
+      const now = new Date();
+      const { data, error } = await ctx.supabase
+        .from("conversations")
+        .select("id,contact_id,cadence_step,cadence_due_at,cadence_last_inbound_at,contact:contacts(id,name,phone)")
+        .eq("account_id", ctx.accountId)
+        .eq("automation_contact_allowed", true)
+        .eq("human_handoff", false)
+        .is("do_not_contact_at", null)
+        .is("cadence_completed_at", null)
+        .not("cadence_due_at", "is", null)
+        .lte("cadence_due_at", now.toISOString())
+        .order("cadence_due_at", { ascending: true })
+        .limit(50);
+      if (error) return fail("internal", "Não foi possível consultar os follow-ups", 500);
+      const allowedNow = isBehubCommercialTime(now);
+      return ok({
+        allowed_now: allowedNow,
+        next_allowed_at: allowedNow ? now.toISOString() : nextBehubCommercialTime(now).toISOString(),
+        followups: data ?? [],
+      });
+    }
 
     if (action === "buscar_lead") {
       const phone = sanitizePhoneForMeta(str(body.phone));
@@ -107,6 +131,58 @@ export async function POST(request: Request) {
       if (!conversationId || !text) return fail("bad_request", "conversation_id e text são obrigatórios", 400);
       const result = await sendEvolutionMessageToConversation(ctx.supabase, ctx.accountId, { conversationId, messageType: "text", contentText: text, sentByType: "diana" });
       return ok(result, 201);
+    }
+
+    if (action === "executar_followup") {
+      const conversationId = str(body.conversation_id);
+      const text = str(body.text);
+      if (!conversationId || !text) return fail("bad_request", "conversation_id e text são obrigatórios", 400);
+      const now = new Date();
+      if (!isBehubCommercialTime(now)) {
+        return fail("outside_business_hours", `Follow-up permitido a partir de ${nextBehubCommercialTime(now).toISOString()}`, 409);
+      }
+      const { data: conversation } = await ctx.supabase.from("conversations")
+        .select("id,cadence_step,cadence_due_at,automation_contact_allowed,do_not_contact_at,human_handoff,cadence_completed_at")
+        .eq("account_id", ctx.accountId).eq("id", conversationId).eq("contact_id", contact.id).maybeSingle();
+      if (!conversation) return fail("not_found", "Conversa não encontrada", 404);
+      if (!conversation.automation_contact_allowed || conversation.do_not_contact_at || conversation.human_handoff || conversation.cadence_completed_at) {
+        return fail("cadence_blocked", "A cadência deste lead está bloqueada ou concluída", 409);
+      }
+      const dueAt = conversation.cadence_due_at ? new Date(conversation.cadence_due_at) : null;
+      if (!dueAt || dueAt > now) return fail("not_due", "Este follow-up ainda não está vencido", 409);
+      const step = Number(conversation.cadence_step ?? 0);
+      if (step < 0 || step > 2) return fail("cadence_complete", "Cadência já concluída", 409);
+
+      const claimUntil = new Date(Date.now() + 10 * 60_000).toISOString();
+      const { data: claim } = await ctx.supabase.from("conversations")
+        .update({ cadence_due_at: claimUntil })
+        .eq("id", conversation.id).eq("cadence_due_at", conversation.cadence_due_at)
+        .select("id").maybeSingle();
+      if (!claim) return fail("already_claimed", "Outro processo já assumiu este follow-up", 409);
+      try {
+        const result = await sendEvolutionMessageToConversation(ctx.supabase, ctx.accountId, {
+          conversationId, messageType: "text", contentText: text,
+          sentByType: "diana", scheduleCadence: false,
+        });
+        const finished = step === 2;
+        const nextDelay = step === 0 ? 4 * 60 * 60_000 : 24 * 60 * 60_000;
+        const nextDue = finished ? null : new Date(Date.now() + nextDelay).toISOString();
+        await ctx.supabase.from("conversations").update({
+          cadence_step: step + 1,
+          cadence_due_at: nextDue,
+          cadence_completed_at: finished ? new Date().toISOString() : null,
+        }).eq("id", conversation.id);
+        await ctx.supabase.from("lead_observations").insert({
+          account_id: ctx.accountId, contact_id: contact.id, conversation_id: conversation.id,
+          author_type: "diana", observation_type: "follow_up",
+          content: `Follow-up ${step + 1}/3 enviado pela Diana`,
+          metadata: { next_due_at: nextDue },
+        });
+        return ok({ ...result, cadence_step: step + 1, next_due_at: nextDue, completed: finished }, 201);
+      } catch (error) {
+        await ctx.supabase.from("conversations").update({ cadence_due_at: conversation.cadence_due_at }).eq("id", conversation.id).eq("cadence_due_at", claimUntil);
+        throw error;
+      }
     }
 
     return fail("bad_request", "Ação Hermes não reconhecida", 400);

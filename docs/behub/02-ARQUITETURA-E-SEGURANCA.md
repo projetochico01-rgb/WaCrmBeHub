@@ -8,7 +8,20 @@
 
 `Hermes -> ferramentas BeHub restritas -> backend do CRM -> Supabase/Evolution`
 
+`Hermes cron -> pre-check sem IA -> skill behub-commercial -> ferramentas BeHub`
+
 O CRM e a fonte oficial de contatos, conversas, mensagens, funil, observacoes, fila e auditoria. Hermes decide dentro das regras, mas nao recebe a chave administrativa do Supabase.
+
+## Orquestracao da cadencia
+
+O Hermes gerencia a cadencia com seu cron nativo. Nao usar Vercel Cron, Supabase Cron ou n8n para esse fluxo.
+
+- `cadence_precheck.py` consulta o CRM sem acordar o modelo;
+- se nao houver follow-up vencido, retorna `wakeAgent=false`;
+- se houver, o cron abre uma sessao isolada com a skill `behub-commercial`;
+- Hermes consulta o lead e chama `executar_followup`;
+- o backend valida horario, opt-out, fila humana, vencimento, sequencia, modo de teste e concorrencia;
+- Supabase guarda somente o estado e o historico da cadencia.
 
 ## Inbox obrigatorio
 

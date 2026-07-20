@@ -85,6 +85,11 @@ export async function sendEvolutionMessageToConversation(
     last_message_text: params.contentText || `[${params.messageType}]`,
     last_message_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    ...(params.sentByType === "diana" && params.scheduleCadence !== false
+      ? { cadence_step: 0, cadence_due_at: new Date(Date.now() + 15 * 60_000).toISOString(), cadence_completed_at: null }
+      : params.sentByType === "human"
+        ? { cadence_due_at: null, cadence_completed_at: new Date().toISOString() }
+        : {}),
   }).eq("id", params.conversationId);
 
   return { messageId: saved.id, whatsappMessageId: externalId };
