@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { encrypt } from "@/lib/whatsapp/encryption";
+import { decrypt, encrypt } from "@/lib/whatsapp/encryption";
 import { getEvolutionConnection, setEvolutionWebhook } from "@/lib/evolution/client";
 
 async function context() {
@@ -23,8 +23,19 @@ export async function POST(request: Request) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const body = await request.json();
-  const apiUrl = String(body.api_url || "").trim().replace(/\/$/, "");
-  const apiKey = String(body.api_key || "").trim();
+  const apiUrl = String(body.api_url || "")
+    .trim()
+    .replace(/\/manager\/?$/i, "")
+    .replace(/\/$/, "");
+  const replacementApiKey = String(body.api_key || "").trim();
+  const { data: existing } = await ctx.db
+    .from("evolution_config")
+    .select("encrypted_api_key")
+    .eq("account_id", ctx.accountId)
+    .maybeSingle();
+  const apiKey = replacementApiKey || (existing?.encrypted_api_key
+    ? decrypt(existing.encrypted_api_key)
+    : "");
   const instanceName = String(body.instance_name || "BeHub").trim();
   if (!apiUrl || !apiKey || !instanceName) return NextResponse.json({ error: "URL, chave e instância são obrigatórias" }, { status: 400 });
 
@@ -39,7 +50,9 @@ export async function POST(request: Request) {
   const { data, error } = await ctx.db.from("evolution_config").upsert({
     account_id: ctx.accountId,
     api_url: apiUrl,
-    encrypted_api_key: encrypt(apiKey),
+    encrypted_api_key: replacementApiKey
+      ? encrypt(replacementApiKey)
+      : existing?.encrypted_api_key,
     instance_name: instanceName,
     integration_type: "WHATSAPP-BAILEYS",
     status: JSON.stringify(connection).toLowerCase().includes("open") ? "connected" : "connecting",

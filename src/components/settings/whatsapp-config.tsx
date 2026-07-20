@@ -109,7 +109,7 @@ export function WhatsAppConfig() {
                 <Button type="button" variant="outline" size="icon" onClick={() => setShowKey((value) => !value)}>{showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</Button>
               </div>
             </div>
-            <Button onClick={save} disabled={saving || !apiUrl || !apiKey || !instanceName}>
+            <Button onClick={save} disabled={saving || !apiUrl || (!config && !apiKey) || !instanceName}>
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Salvar e testar conexão
             </Button>
