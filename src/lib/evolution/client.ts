@@ -116,11 +116,16 @@ export function setEvolutionWebhook(
     {
       method: "POST",
       body: JSON.stringify({
-        enabled: true,
-        url,
-        webhookByEvents: false,
-        webhookBase64: true,
-        events: ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "MESSAGES_UPDATE"],
+        // Evolution 2.3.7 expects the settings nested under `webhook`.
+        // The public v2 docs show the fields at the root, but that shape
+        // returns: instance requires property "webhook" on this instance.
+        webhook: {
+          enabled: true,
+          url,
+          webhookByEvents: false,
+          webhookBase64: true,
+          events: ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "MESSAGES_UPDATE"],
+        },
       }),
     },
   );
