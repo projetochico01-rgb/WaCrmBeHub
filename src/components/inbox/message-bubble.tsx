@@ -65,7 +65,7 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
     if (!url) return;
 
     // Proxy URLs need auth fetch to create blob URL
-    if (url.startsWith("/api/whatsapp/media/")) {
+    if (url.startsWith("/api/")) {
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to load media");
@@ -120,6 +120,9 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
 }
 
 function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof useTranslations> }) {
+  const mediaUrl = message.media_url?.startsWith("hermes-private://")
+    ? `/api/hermes/media/${message.id}`
+    : message.media_url;
   switch (message.content_type) {
     case "text":
       return (
@@ -131,8 +134,8 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
     case "image":
       return (
         <div>
-          {message.media_url ? (
-            <MediaImage url={message.media_url} alt="Imagem compartilhada" />
+          {mediaUrl ? (
+            <MediaImage url={mediaUrl} alt="Imagem compartilhada" />
           ) : (
             <MediaUnavailable label={t("photo")} t={t} />
           )}
@@ -147,9 +150,9 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
     case "video":
       return (
         <div>
-          {message.media_url ? (
+          {mediaUrl ? (
             <video
-              src={message.media_url}
+              src={mediaUrl}
               controls
               className="max-h-64 max-w-60 rounded-lg"
             />
@@ -167,8 +170,8 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
     case "audio":
       return (
         <div>
-          {message.media_url ? (
-            <audio src={message.media_url} controls className="max-w-60" />
+          {mediaUrl ? (
+            <audio src={mediaUrl} controls className="max-w-60" />
           ) : (
             <MediaUnavailable label={t("audio")} t={t} />
           )}
@@ -176,12 +179,12 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
       );
 
     case "document":
-      if (!message.media_url) {
+      if (!mediaUrl) {
         return <MediaUnavailable label={message.content_text || t("document")} t={t} />;
       }
       return (
         <a
-          href={message.media_url}
+          href={mediaUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm hover:bg-muted"
