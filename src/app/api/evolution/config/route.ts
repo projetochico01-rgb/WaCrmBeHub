@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt, encrypt } from "@/lib/whatsapp/encryption";
 import { getEvolutionConnection, setEvolutionWebhook } from "@/lib/evolution/client";
+import { evolutionWebhookSecret } from "@/lib/evolution/webhook-secret";
 
 async function context() {
   const db = await createClient();
@@ -62,8 +63,8 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const origin = new URL(request.url).origin;
-  const secret = process.env.EVOLUTION_WEBHOOK_SECRET;
-  if (secret && !origin.includes("localhost")) {
+  const secret = evolutionWebhookSecret(ctx.accountId);
+  if (!origin.includes("localhost")) {
     await setEvolutionWebhook(credentials, `${origin}/api/evolution/webhook?secret=${encodeURIComponent(secret)}`);
   }
   return NextResponse.json({ config: data, connection });

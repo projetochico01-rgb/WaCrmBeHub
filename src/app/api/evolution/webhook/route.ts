@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/flows/admin-client";
+import { validEvolutionWebhookSecret } from "@/lib/evolution/webhook-secret";
 
 // Evolution 2.3.x sends different nested shapes for text, media and status events.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,16 +26,17 @@ function messageContent(message: Json): { type: string; text: string | null; med
 }
 
 export async function POST(request: Request) {
-  const expected = process.env.EVOLUTION_WEBHOOK_SECRET;
   const supplied = new URL(request.url).searchParams.get("secret");
-  if (!expected || supplied !== expected) return NextResponse.json({ error: "Webhook inválido" }, { status: 401 });
+  if (!supplied) return NextResponse.json({ error: "Webhook inválido" }, { status: 401 });
 
   const body = await request.json() as Json;
   const event = String(body.event || "").toUpperCase().replace(/[.-]/g, "_");
   const instanceName = String(body.instance || body.instanceName || body.data?.instance || "");
   const db = supabaseAdmin();
   const { data: config } = await db.from("evolution_config").select("account_id,instance_name").eq("instance_name", instanceName).maybeSingle();
-  if (!config) return NextResponse.json({ received: true });
+  if (!config || !validEvolutionWebhookSecret(config.account_id, supplied)) {
+    return NextResponse.json({ error: "Webhook inválido" }, { status: 401 });
+  }
 
   if (event === "CONNECTION_UPDATE") {
     const state = String(body.data?.state || body.data?.status || "").toLowerCase();

@@ -65,6 +65,7 @@ function request(body: Record<string, unknown>) {
 
 describe("POST /api/evolution/config", () => {
   beforeEach(() => {
+    process.env.ENCRYPTION_KEY = "test-encryption-key-with-enough-entropy";
     storedEncryptedKey = "encrypted-existing";
     upsertPayload = null;
     db = makeDb();
