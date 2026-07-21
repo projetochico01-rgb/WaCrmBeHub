@@ -40,7 +40,7 @@ export function SettingsOverview({
     useAuth();
   const { mode, theme } = useTheme();
   const t = useTranslations('Settings.overview');
-  const tRoles = useTranslations('roles');
+  const tRoles = useTranslations('Settings.roles');
   const tSections = useTranslations('Settings.sections');
 
   const [counts, setCounts] = useState<OverviewCounts | null>(null);
@@ -120,18 +120,13 @@ export function SettingsOverview({
     // WhatsApp connection status — slower, independent.
     (async () => {
       setWhatsappLoading(true);
-      const [row, health] = await Promise.allSettled([
-        supabase
-          .from('whatsapp_config')
-          .select('phone_number_id')
-          .eq('account_id', acctId)
-          .maybeSingle(),
-        fetch('/api/whatsapp/config', { cache: 'no-store' }).then((r) => r.json()),
-      ]);
+      const health = await fetch('/api/evolution/config', { cache: 'no-store' })
+        .then((r) => r.json())
+        .catch(() => null);
       if (cancelled) return;
       setWhatsapp({
-        configured: row.status === 'fulfilled' && !!row.value.data?.phone_number_id,
-        connected: health.status === 'fulfilled' && !!health.value?.connected,
+        configured: !!health?.config,
+        connected: health?.config?.status === 'connected',
       });
       setWhatsappLoading(false);
     })();
@@ -146,10 +141,18 @@ export function SettingsOverview({
   const roleMeta = accountRole ? ROLE_META[accountRole] : null;
   const RoleIcon = roleMeta?.icon;
 
-  const currencyLabel =
-    CURRENCIES.find((c) => c.code === defaultCurrency)?.label ?? defaultCurrency;
-  const themeName = THEMES.find((t) => t.id === theme)?.name ?? theme;
-  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const currencyLabel = defaultCurrency === 'BRL'
+    ? 'Real brasileiro'
+    : CURRENCIES.find((c) => c.code === defaultCurrency)?.label ?? defaultCurrency;
+  const themeNames: Record<string, string> = {
+    violet: 'Violeta',
+    emerald: 'Esmeralda',
+    cobalt: 'Cobalto',
+    amber: 'Âmbar',
+    rose: 'Rosa',
+  };
+  const themeName = themeNames[theme] ?? THEMES.find((item) => item.id === theme)?.name ?? theme;
+  const modeName = mode === 'dark' ? 'Escuro' : 'Claro';
 
   // Per-tile loading + subtitle. `null` counts render as a graceful
   // fallback so a single failed query never blanks a tile.
@@ -215,7 +218,7 @@ export function SettingsOverview({
     {
       section: 'appearance',
       loading: false,
-      subtitle: t('appearance', { mode: cap(mode), theme: themeName }),
+      subtitle: t('appearance', { mode: modeName, theme: themeName }),
     },
   ];
 
