@@ -27,6 +27,10 @@ export function WhatsAppConfig() {
   const [instanceName, setInstanceName] = useState("BeHub");
   const [qr, setQr] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const isConnected = config?.status === "connected";
+  const connectedPhone = config?.connected_phone
+    ? `+${config.connected_phone}`
+    : "Número confirmado pela Evolution";
 
   const load = useCallback(async () => {
     try {
@@ -91,7 +95,9 @@ export function WhatsAppConfig() {
               <Alert>
                 <CheckCircle2 className="size-4" />
                 <AlertTitle>{config.status === "connected" ? "WhatsApp conectado" : "Instância configurada"}</AlertTitle>
-                <AlertDescription>Status atual: {config.status}</AlertDescription>
+                <AlertDescription>
+                  {isConnected ? `Número ativo: ${connectedPhone}` : `Status atual: ${config.status}`}
+                </AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
@@ -117,14 +123,28 @@ export function WhatsAppConfig() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Vincular WhatsApp</CardTitle>
-            <CardDescription>O QR Code pode ser escaneado aqui no CRM; não será necessário abrir o painel da VPS.</CardDescription>
+            <CardTitle>{isConnected ? "WhatsApp ativo" : "Vincular WhatsApp"}</CardTitle>
+            <CardDescription>
+              {isConnected
+                ? "Esta instância já está ocupada por um número. Para outro número, use uma nova instância."
+                : "O QR Code pode ser escaneado aqui no CRM; não será necessário abrir o painel da VPS."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
-            {qr ? <img src={qr} alt="QR Code do WhatsApp" className="mx-auto size-64 rounded-lg bg-white p-3" /> : <div className="mx-auto flex size-64 items-center justify-center rounded-lg border border-dashed"><QrCode className="size-20 text-muted-foreground" /></div>}
-            {pairingCode && <p className="font-mono text-lg font-semibold">Código: {pairingCode}</p>}
-            <Button variant="outline" onClick={loadQr} disabled={!config}><QrCode className="size-4" />Gerar ou atualizar QR Code</Button>
-            <p className="text-xs text-muted-foreground">WhatsApp → Aparelhos conectados → Conectar um aparelho.</p>
+            {isConnected ? (
+              <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border bg-emerald-500/5 p-6">
+                <CheckCircle2 className="size-20 text-emerald-500" />
+                <p className="text-lg font-semibold">{connectedPhone}</p>
+                <p className="text-sm text-muted-foreground">Instância {config.instance_name} conectada</p>
+              </div>
+            ) : (
+              <>
+                {qr ? <img src={qr} alt="QR Code do WhatsApp" className="mx-auto size-64 rounded-lg bg-white p-3" /> : <div className="mx-auto flex size-64 items-center justify-center rounded-lg border border-dashed"><QrCode className="size-20 text-muted-foreground" /></div>}
+                {pairingCode && <p className="font-mono text-lg font-semibold">Código: {pairingCode}</p>}
+                <Button variant="outline" onClick={loadQr} disabled={!config}><QrCode className="size-4" />Gerar ou atualizar QR Code</Button>
+                <p className="text-xs text-muted-foreground">WhatsApp → Aparelhos conectados → Conectar um aparelho.</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

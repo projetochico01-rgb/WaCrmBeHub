@@ -4,6 +4,14 @@ export interface EvolutionCredentials {
   instance: string;
 }
 
+export interface EvolutionInstanceDetails {
+  instanceName: string;
+  instanceId: string | null;
+  status: string;
+  connectedPhone: string | null;
+  profileName: string | null;
+}
+
 export class EvolutionApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -104,6 +112,34 @@ export function getEvolutionConnection(config: EvolutionCredentials) {
     config,
     `/instance/connectionState/${encodeURIComponent(config.instance)}`,
   );
+}
+
+export async function getEvolutionInstanceDetails(
+  config: EvolutionCredentials,
+): Promise<EvolutionInstanceDetails | null> {
+  const payload = await evolutionFetch<unknown>(
+    config,
+    `/instance/fetchInstances?instanceName=${encodeURIComponent(config.instance)}`,
+  );
+  const entries = Array.isArray(payload) ? payload : [payload];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object") continue;
+    const wrapper = entry as Record<string, unknown>;
+    const value = wrapper.instance && typeof wrapper.instance === "object"
+      ? wrapper.instance as Record<string, unknown>
+      : wrapper;
+    const instanceName = String(value.instanceName ?? value.name ?? "");
+    if (instanceName && instanceName !== config.instance) continue;
+    const owner = String(value.owner ?? value.ownerJid ?? value.number ?? "");
+    return {
+      instanceName: instanceName || config.instance,
+      instanceId: value.instanceId || value.id ? String(value.instanceId ?? value.id) : null,
+      status: String(value.status ?? value.connectionStatus ?? value.state ?? "close").toLowerCase(),
+      connectedPhone: owner ? owner.replace(/@.*$/, "").replace(/\D/g, "") || null : null,
+      profileName: value.profileName ? String(value.profileName) : null,
+    };
+  }
+  return null;
 }
 
 export function setEvolutionWebhook(

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/whatsapp/encryption";
-import { getEvolutionQr } from "@/lib/evolution/client";
+import { getEvolutionConnection, getEvolutionQr } from "@/lib/evolution/client";
 
 export async function GET() {
   const db = await createClient();
@@ -12,7 +12,12 @@ export async function GET() {
   const { data: config } = await db.from("evolution_config").select("api_url,encrypted_api_key,instance_name").eq("account_id", profile.account_id).single();
   if (!config?.encrypted_api_key) return NextResponse.json({ error: "Evolution não configurada" }, { status: 400 });
   try {
-    const qr = await getEvolutionQr({ baseUrl: config.api_url, apiKey: decrypt(config.encrypted_api_key), instance: config.instance_name });
+    const credentials = { baseUrl: config.api_url, apiKey: decrypt(config.encrypted_api_key), instance: config.instance_name };
+    const connection = await getEvolutionConnection(credentials);
+    if (JSON.stringify(connection).toLowerCase().includes("open")) {
+      return NextResponse.json({ error: "Esta instância já possui um WhatsApp conectado" }, { status: 409 });
+    }
+    const qr = await getEvolutionQr(credentials);
     return NextResponse.json(qr);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Falha ao obter QR Code" }, { status: 502 });

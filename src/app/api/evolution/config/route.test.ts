@@ -49,6 +49,13 @@ vi.mock("@/lib/whatsapp/encryption", () => encryption);
 
 const evolution = vi.hoisted(() => ({
   getEvolutionConnection: vi.fn(async () => ({ instance: { state: "open" } })),
+  getEvolutionInstanceDetails: vi.fn(async () => ({
+    instanceName: "BeHub",
+    instanceId: "instance-1",
+    status: "open",
+    connectedPhone: "5547999999999",
+    profileName: "BeHub",
+  })),
   setEvolutionWebhook: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/evolution/client", () => evolution);

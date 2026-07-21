@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { setEvolutionWebhook } from "./client";
+import { getEvolutionInstanceDetails, setEvolutionWebhook } from "./client";
 
 describe("setEvolutionWebhook", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -27,6 +27,32 @@ describe("setEvolutionWebhook", () => {
         webhookBase64: true,
         events: ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "MESSAGES_UPDATE"],
       },
+    });
+  });
+});
+
+describe("getEvolutionInstanceDetails", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("normalizes the Evolution 2.3.7 flat instance response", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async () => new Response(JSON.stringify([{
+      name: "BeHub",
+      id: "instance-1",
+      connectionStatus: "open",
+      ownerJid: "5547987654321@s.whatsapp.net",
+      profileName: "BeHub Energia",
+    }]), { status: 200, headers: { "Content-Type": "application/json" } })));
+
+    await expect(getEvolutionInstanceDetails({
+      baseUrl: "https://evolution.example.com",
+      apiKey: "secret",
+      instance: "BeHub",
+    })).resolves.toEqual({
+      instanceName: "BeHub",
+      instanceId: "instance-1",
+      status: "open",
+      connectedPhone: "5547987654321",
+      profileName: "BeHub Energia",
     });
   });
 });
