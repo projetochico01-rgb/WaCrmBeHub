@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getEvolutionInstanceDetails, setEvolutionWebhook } from "./client";
+import { getEvolutionInstanceDetails, logoutEvolutionInstance, setEvolutionWebhook } from "./client";
 
 describe("setEvolutionWebhook", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -54,5 +54,28 @@ describe("getEvolutionInstanceDetails", () => {
       connectedPhone: "5547987654321",
       profileName: "BeHub Energia",
     });
+  });
+});
+
+describe("logoutEvolutionInstance", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("logs out only the selected instance", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ status: "SUCCESS" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await logoutEvolutionInstance({
+      baseUrl: "https://evolution.example.com",
+      apiKey: "secret",
+      instance: "BeHub",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://evolution.example.com/instance/logout/BeHub",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2, QrCode, Save } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2, LogOut, QrCode, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { SettingsPanelHead } from "./settings-panel-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type EvolutionConfig = {
   api_url: string;
@@ -20,6 +21,8 @@ type EvolutionConfig = {
 export function WhatsAppConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [config, setConfig] = useState<EvolutionConfig | null>(null);
   const [apiUrl, setApiUrl] = useState("");
@@ -81,6 +84,24 @@ export function WhatsAppConfig() {
     }
   }
 
+  async function disconnect() {
+    setDisconnecting(true);
+    try {
+      const response = await fetch("/api/evolution/config", { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao desconectar");
+      setConfig((current) => current ? { ...current, status: "disconnected", connected_phone: null } : current);
+      setQr(null);
+      setPairingCode(null);
+      setDisconnectOpen(false);
+      toast.success("WhatsApp desconectado. Agora você pode vincular outro número.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao desconectar");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
   return (
     <section>
       <SettingsPanelHead title="WhatsApp pela Evolution API" description="Leia e responda mensagens diretamente na Caixa de entrada do CRM." />
@@ -91,15 +112,35 @@ export function WhatsAppConfig() {
             <CardDescription>A chave é criptografada antes de ser gravada no Supabase.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {config && (
+            {isConnected ? (
+              <>
+                <Alert>
+                  <CheckCircle2 className="size-4" />
+                  <AlertTitle>WhatsApp conectado</AlertTitle>
+                  <AlertDescription>Número ativo: {connectedPhone}</AlertDescription>
+                </Alert>
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                  <p className="font-medium">Instância {config?.instance_name}</p>
+                  <p className="mt-1 text-muted-foreground">As credenciais ficam protegidas enquanto a conexão estiver ativa.</p>
+                </div>
+                <Button variant="outline" onClick={save} disabled={saving}>
+                  {saving ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                  Sincronizar CRM e webhook
+                </Button>
+                <Button variant="destructive" onClick={() => setDisconnectOpen(true)}>
+                  <LogOut className="size-4" />
+                  Desconectar e trocar número
+                </Button>
+              </>
+            ) : (
+              <>
+              {config && (
               <Alert>
                 <CheckCircle2 className="size-4" />
-                <AlertTitle>{config.status === "connected" ? "WhatsApp conectado" : "Instância configurada"}</AlertTitle>
-                <AlertDescription>
-                  {isConnected ? `Número ativo: ${connectedPhone}` : `Status atual: ${config.status}`}
-                </AlertDescription>
+                <AlertTitle>Instância configurada</AlertTitle>
+                <AlertDescription>Status atual: {config.status}</AlertDescription>
               </Alert>
-            )}
+              )}
             <div className="space-y-2">
               <Label>Endereço da Evolution API</Label>
               <Input value={apiUrl} onChange={(event) => setApiUrl(event.target.value)} placeholder="https://evolution.seudominio.com" disabled={loading} />
@@ -119,6 +160,8 @@ export function WhatsAppConfig() {
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Salvar e testar conexão
             </Button>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -148,6 +191,23 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
       </div>
+      <Dialog open={disconnectOpen} onOpenChange={setDisconnectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desconectar este WhatsApp?</DialogTitle>
+            <DialogDescription>
+              O número {connectedPhone} será desconectado da instância {config?.instance_name}. Depois, o CRM mostrará o QR Code para vincular outro número.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisconnectOpen(false)} disabled={disconnecting}>Cancelar</Button>
+            <Button variant="destructive" onClick={disconnect} disabled={disconnecting}>
+              {disconnecting ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
+              Confirmar desconexão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

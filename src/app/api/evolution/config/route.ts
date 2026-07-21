@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt, encrypt } from "@/lib/whatsapp/encryption";
-import { getEvolutionConnection, getEvolutionInstanceDetails, setEvolutionWebhook } from "@/lib/evolution/client";
+import { getEvolutionConnection, getEvolutionInstanceDetails, logoutEvolutionInstance, setEvolutionWebhook } from "@/lib/evolution/client";
 import { evolutionWebhookSecret } from "@/lib/evolution/webhook-secret";
 
 async function context() {
@@ -99,4 +99,37 @@ export async function POST(request: Request) {
     await setEvolutionWebhook(credentials, `${origin}/api/evolution/webhook?secret=${encodeURIComponent(secret)}`);
   }
   return NextResponse.json({ config: data, connection });
+}
+
+export async function DELETE() {
+  const ctx = await context();
+  if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const { data: config, error: readError } = await ctx.db
+    .from("evolution_config")
+    .select("api_url,encrypted_api_key,instance_name")
+    .eq("account_id", ctx.accountId)
+    .single();
+  if (readError || !config?.encrypted_api_key) {
+    return NextResponse.json({ error: "Evolution não configurada" }, { status: 400 });
+  }
+
+  try {
+    await logoutEvolutionInstance({
+      baseUrl: config.api_url,
+      apiKey: decrypt(config.encrypted_api_key),
+      instance: config.instance_name,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: `Não foi possível desconectar: ${error instanceof Error ? error.message : "erro"}`,
+    }, { status: 502 });
+  }
+
+  const { error: updateError } = await ctx.db.from("evolution_config").update({
+    status: "disconnected",
+    connected_phone: null,
+    last_event_at: new Date().toISOString(),
+  }).eq("account_id", ctx.accountId);
+  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  return NextResponse.json({ disconnected: true });
 }

@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let storedEncryptedKey: string | null = "encrypted-existing";
 let upsertPayload: Record<string, unknown> | null = null;
+let updatePayload: Record<string, unknown> | null = null;
+let singleEvolutionConfig: Record<string, unknown> | null = null;
 
 function makeDb() {
   const from = vi.fn((table: string) => {
-    let mode: "read" | "upsert" = "read";
+    let mode: "read" | "upsert" | "update" = "read";
     const builder: Record<string, unknown> = {};
     const chain = () => builder;
     builder.select = vi.fn(chain);
@@ -13,6 +15,11 @@ function makeDb() {
     builder.upsert = vi.fn((payload: Record<string, unknown>) => {
       mode = "upsert";
       upsertPayload = payload;
+      return builder;
+    });
+    builder.update = vi.fn((payload: Record<string, unknown>) => {
+      mode = "update";
+      updatePayload = payload;
       return builder;
     });
     builder.maybeSingle = vi.fn(async () => {
@@ -25,6 +32,9 @@ function makeDb() {
       if (table === "profiles") return { data: { account_id: "acct-1" }, error: null };
       if (table === "evolution_config" && mode === "upsert") {
         return { data: { id: "cfg-1", api_url: upsertPayload?.api_url, instance_name: "BeHub", status: "connected", enabled: true }, error: null };
+      }
+      if (table === "evolution_config" && mode === "read" && singleEvolutionConfig) {
+        return { data: singleEvolutionConfig, error: null };
       }
       return { data: null, error: null };
     });
@@ -56,11 +66,12 @@ const evolution = vi.hoisted(() => ({
     connectedPhone: "5547999999999",
     profileName: "BeHub",
   })),
+  logoutEvolutionInstance: vi.fn(async () => ({ status: "SUCCESS" })),
   setEvolutionWebhook: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/evolution/client", () => evolution);
 
-import { POST } from "./route";
+import { DELETE, POST } from "./route";
 
 function request(body: Record<string, unknown>) {
   return new Request("https://wa-crm-be-hub.vercel.app/api/evolution/config", {
@@ -75,6 +86,8 @@ describe("POST /api/evolution/config", () => {
     process.env.ENCRYPTION_KEY = "test-encryption-key-with-enough-entropy";
     storedEncryptedKey = "encrypted-existing";
     upsertPayload = null;
+    updatePayload = null;
+    singleEvolutionConfig = null;
     db = makeDb();
     vi.clearAllMocks();
   });
@@ -111,5 +124,23 @@ describe("POST /api/evolution/config", () => {
 
     expect(response.status).toBe(400);
     expect(evolution.getEvolutionConnection).not.toHaveBeenCalled();
+  });
+
+  it("logs out the connected instance and clears its phone", async () => {
+    singleEvolutionConfig = {
+      api_url: "https://evolution.example.com",
+      encrypted_api_key: "encrypted-existing",
+      instance_name: "BeHub",
+    };
+
+    const response = await DELETE();
+
+    expect(response.status).toBe(200);
+    expect(evolution.logoutEvolutionInstance).toHaveBeenCalledWith({
+      baseUrl: "https://evolution.example.com",
+      apiKey: "existing-plaintext",
+      instance: "BeHub",
+    });
+    expect(updatePayload).toMatchObject({ status: "disconnected", connected_phone: null });
   });
 });

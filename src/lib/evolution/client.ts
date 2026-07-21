@@ -114,6 +114,14 @@ export function getEvolutionConnection(config: EvolutionCredentials) {
   );
 }
 
+export function logoutEvolutionInstance(config: EvolutionCredentials) {
+  return evolutionFetch<unknown>(
+    config,
+    `/instance/logout/${encodeURIComponent(config.instance)}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function getEvolutionInstanceDetails(
   config: EvolutionCredentials,
 ): Promise<EvolutionInstanceDetails | null> {
