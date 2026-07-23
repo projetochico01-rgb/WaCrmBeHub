@@ -10,6 +10,7 @@ import type {
   Conversation,
   Deal,
   DealStatus,
+  LeadObservation,
   PipelineStage,
   Profile,
 } from "@/types";
@@ -30,6 +31,9 @@ import {
   MessageSquare,
   DollarSign,
   Loader2,
+  Mail,
+  Phone,
+  StickyNote,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -70,6 +74,8 @@ export function DealForm({
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [linkedConversation, setLinkedConversation] =
     useState<Conversation | null>(null);
+  const [observations, setObservations] = useState<LeadObservation[]>([]);
+  const [loadingObservations, setLoadingObservations] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [statusAction, setStatusAction] = useState<DealStatus | null>(null);
@@ -150,6 +156,36 @@ export function DealForm({
       cancelled = true;
     };
   }, [open, contactId, supabase]);
+
+  // Hermes stores the durable commercial context in lead_observations.
+  // Read it directly instead of copying it into the deal's manual notes.
+  useEffect(() => {
+    if (!open || !contactId || !accountId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setObservations([]);
+      setLoadingObservations(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingObservations(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from("lead_observations")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (cancelled) return;
+      setObservations(error ? [] : ((data ?? []) as LeadObservation[]));
+      setLoadingObservations(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, contactId, accountId, supabase]);
+
+  const selectedContact = contacts.find((contact) => contact.id === contactId);
 
   async function handleSave() {
     if (!title.trim() || !contactId || !stageId) {
@@ -294,6 +330,66 @@ export function DealForm({
                 </Link>
               )}
             </div>
+
+            {selectedContact && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t("collectedData")}
+                </p>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-foreground">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{selectedContact.phone}</span>
+                  </div>
+                  {selectedContact.email && (
+                    <div className="flex items-center gap-2 text-foreground">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="break-all">{selectedContact.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <StickyNote className="h-3.5 w-3.5" />
+                    {t("dianaHistory")}
+                  </div>
+                  {loadingObservations ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {t("loadingHistory")}
+                    </div>
+                  ) : observations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t("noCollectedData")}</p>
+                  ) : (
+                    <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                      {observations.map((observation) => (
+                        <div key={observation.id} className="rounded-md bg-muted px-3 py-2">
+                          <p className="whitespace-pre-wrap text-xs text-foreground">
+                            {observation.content}
+                          </p>
+                          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                            <span>
+                              {observation.author_type === "diana"
+                                ? t("authorDiana")
+                                : observation.author_type === "human"
+                                  ? t("authorHuman")
+                                  : t("authorSystem")}
+                            </span>
+                            <span>
+                              {new Intl.DateTimeFormat("pt-BR", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              }).format(new Date(observation.created_at))}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-[1fr_110px] gap-3">
               <div className="grid gap-2">

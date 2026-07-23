@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       const payload = { stage_id: stage.id, pipeline_id: pipelineId, updated_at: new Date().toISOString(), qualification_reason: str(body.reason) || null };
       const result = existing
         ? await ctx.supabase.from("deals").update(payload).eq("id", existing.id).select("id,stage_id,updated_at").single()
-        : await ctx.supabase.from("deals").insert({ ...payload, account_id: ctx.accountId, user_id: account?.owner_user_id, contact_id: contact.id, conversation_id: str(body.conversation_id) || null, title: contact.name || contact.phone, currency: "BRL" }).select("id,stage_id,updated_at").single();
+        : await ctx.supabase.from("deals").insert({ ...payload, account_id: ctx.accountId, user_id: account?.owner_user_id, contact_id: contact.id, conversation_id: str(body.conversation_id) || null, title: str(body.title) || "Nova oportunidade", currency: "BRL" }).select("id,stage_id,updated_at").single();
       if (result.error) return fail("internal", "Não foi possível mudar a etapa", 500);
       await ctx.supabase.from("lead_observations").insert({ account_id: ctx.accountId, contact_id: contact.id, deal_id: result.data.id, author_type: "diana", observation_type: "stage_change", content: `Etapa alterada para ${stageName}${str(body.reason) ? `: ${str(body.reason)}` : ""}` });
       return ok({ ...result.data, stage: stageName });
