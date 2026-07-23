@@ -210,7 +210,7 @@ export interface LeadObservation {
 // Notifications (migration 027)
 // ============================================================
 
-export type NotificationType = 'conversation_assigned';
+export type NotificationType = 'conversation_assigned' | 'new_contact' | 'human_handoff_requested' | 'invoice_received' | 'media_rejected' | 'channel_failure' | 'hermes_failure';
 
 export interface Notification {
   id: string;
@@ -224,6 +224,8 @@ export interface Notification {
   actor_user_id?: string;
   title: string;
   body?: string;
+  severity?: 'info' | 'attention' | 'critical';
+  metadata?: Record<string, unknown>;
   read_at?: string;
   created_at: string;
 }

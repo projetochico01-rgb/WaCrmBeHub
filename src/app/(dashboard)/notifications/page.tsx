@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { Notification } from "@/types";
-import { Bell, CheckCheck, Loader2, UserPlus } from "lucide-react";
+import { Bell, BotOff, CheckCheck, FileCheck2, FileWarning, Loader2, MessageCircleWarning, UserPlus, WifiOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,12 @@ import { toast } from "sonner";
 // (conversation_assigned) but this keeps future types a one-line add.
 const TYPE_ICON: Record<Notification["type"], typeof Bell> = {
   conversation_assigned: UserPlus,
+  new_contact: UserPlus,
+  human_handoff_requested: MessageCircleWarning,
+  invoice_received: FileCheck2,
+  media_rejected: FileWarning,
+  channel_failure: WifiOff,
+  hermes_failure: BotOff,
 };
 
 export default function NotificationsPage() {
@@ -116,6 +122,8 @@ export default function NotificationsPage() {
       if (!n.read_at) markRead(n.id);
       if (n.conversation_id) {
         router.push(`/inbox?c=${n.conversation_id}`);
+      } else if (n.contact_id) {
+        router.push("/contacts");
       }
     },
     [markRead, router],
@@ -167,7 +175,7 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Notificações</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            As conversas que outros colegas de equipe atribuem a você aparecem aqui.
+            Alertas comerciais e de funcionamento do Hermes e WhatsApp.
           </p>
         </div>
         <Button
@@ -194,8 +202,7 @@ export default function NotificationsPage() {
             Nenhuma notificação ainda
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Você verá um alerta aqui quando alguém lhe atribuir um
-            conversa.
+            Você verá aqui novos clientes, pedidos de atendimento, arquivos e falhas.
           </p>
         </div>
       ) : (

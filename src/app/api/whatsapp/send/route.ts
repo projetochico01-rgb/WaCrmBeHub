@@ -89,9 +89,9 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!['text', 'image', 'video', 'document', 'audio'].includes(message_type)) {
+    if (!['text', 'image', 'video', 'document', 'audio', 'interactive'].includes(message_type)) {
       return NextResponse.json(
-        { error: 'A Evolution API aceita texto e mídia neste Inbox.' },
+        { error: 'A Evolution API aceita texto, mídia e mensagens interativas neste Inbox.' },
         { status: 400 },
       )
     }

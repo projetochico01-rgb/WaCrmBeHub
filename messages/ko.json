@@ -1514,7 +1514,8 @@
     },
     "groups": {
       "account": "계정",
-      "workspace": "워크스페이스"
+      "workspace": "워크스페이스",
+      "advanced": "고급"
     },
     "profile": {
       "title": "내 프로필",

@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
-import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { validateInteractivePayload } from '@/lib/whatsapp/interactive'
 
 // Update / delete a single quick reply. Quick replies are account-
-// shared, so every mutation is scoped by `account_id` (the service-role
-// client bypasses the agent-gated RLS, so both the role check and the
-// account scope are enforced here).
+// shared, so every mutation is scoped by `account_id` and protected by
+// the authenticated user's agent-gated RLS policy.
 
 export async function PATCH(
   request: Request,
@@ -72,7 +70,7 @@ export async function PATCH(
     return NextResponse.json({ ok: true })
   }
 
-  const { error } = await supabaseAdmin()
+  const { error } = await ctx.supabase
     .from('quick_replies')
     .update(update)
     .eq('id', id)
@@ -93,7 +91,7 @@ export async function DELETE(
     return toErrorResponse(err)
   }
 
-  const { error } = await supabaseAdmin()
+  const { error } = await ctx.supabase
     .from('quick_replies')
     .delete()
     .eq('id', id)

@@ -133,4 +133,12 @@ describe("POST /api/whatsapp/send — Evolution contact path", () => {
     expect(response.status).toBe(400);
     expect(evolution.sendEvolutionMessageToConversation).not.toHaveBeenCalled();
   });
+
+  it("passes interactive quick replies to Evolution", async () => {
+    existingConversation = { id: "conv-existing", account_id: "acct-1", contact_id: CONTACT.id, contact: CONTACT };
+    const payload = { kind: "buttons", body: "Como prefere continuar?", buttons: [{ id: "humano", title: "Falar com humano" }] };
+    const response = await postContactText({ message_type: "interactive", content_text: null, interactive_payload: payload });
+    expect(response.status).toBe(200);
+    expect(evolution.sendEvolutionMessageToConversation).toHaveBeenCalledWith(expect.anything(), "acct-1", expect.objectContaining({ messageType: "interactive", interactivePayload: payload, sentByType: "human" }));
+  });
 });

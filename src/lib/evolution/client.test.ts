@@ -1,5 +1,33 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getEvolutionInstanceDetails, logoutEvolutionInstance, setEvolutionWebhook } from "./client";
+import { getEvolutionInstanceDetails, logoutEvolutionInstance, sendEvolutionInteractive, setEvolutionWebhook } from "./client";
+
+describe("sendEvolutionInteractive", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("maps reply buttons to Evolution v2", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ key: { id: "msg-1" } }), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(sendEvolutionInteractive(
+      { baseUrl: "https://evolution.example.com", apiKey: "secret", instance: "BeHub" },
+      { number: "5547988976484", payload: { kind: "buttons", body: "Como prefere continuar?", buttons: [{ id: "humano", title: "Falar com humano" }] } },
+    )).resolves.toBe("msg-1");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://evolution.example.com/message/sendButtons/BeHub");
+    expect(JSON.parse(String(init?.body))).toMatchObject({ buttons: [{ type: "reply", displayText: "Falar com humano", id: "humano" }] });
+  });
+
+  it("maps lists and preserves row ids", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ key: { id: "msg-2" } }), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await sendEvolutionInteractive(
+      { baseUrl: "https://evolution.example.com", apiKey: "secret", instance: "BeHub" },
+      { number: "5547988976484", payload: { kind: "list", body: "Escolha", button_label: "Ver opções", sections: [{ rows: [{ id: "fatura", title: "Enviar fatura" }] }] } },
+    );
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://evolution.example.com/message/sendList/BeHub");
+    expect(JSON.parse(String(init?.body))).toMatchObject({ sections: [{ rows: [{ rowId: "fatura" }] }] });
+  });
+});
 
 describe("setEvolutionWebhook", () => {
   afterEach(() => vi.unstubAllGlobals());

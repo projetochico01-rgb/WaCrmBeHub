@@ -100,6 +100,47 @@ export async function sendEvolutionMedia(
   return result.key.id;
 }
 
+export async function sendEvolutionInteractive(
+  config: EvolutionCredentials,
+  input: {
+    number: string;
+    payload: import("@/lib/whatsapp/interactive").InteractiveMessagePayload;
+    quotedId?: string;
+  },
+): Promise<string> {
+  const quoted = input.quotedId ? { quoted: { key: { id: input.quotedId } } } : {};
+  const request = input.payload.kind === "buttons" ? {
+    path: `/message/sendButtons/${encodeURIComponent(config.instance)}`,
+    body: {
+      number: input.number,
+      title: input.payload.header || "",
+      description: input.payload.body,
+      footer: input.payload.footer || "",
+      buttons: input.payload.buttons.map((button) => ({ type: "reply", displayText: button.title, title: button.title, id: button.id })),
+      ...quoted,
+    },
+  } : {
+    path: `/message/sendList/${encodeURIComponent(config.instance)}`,
+    body: {
+      number: input.number,
+      title: input.payload.header || "",
+      description: input.payload.body,
+      buttonText: input.payload.button_label,
+      footerText: input.payload.footer || "",
+      sections: input.payload.sections.map((section) => ({
+        title: section.title || "Opções",
+        rows: section.rows.map((row) => ({ title: row.title, description: row.description || "", rowId: row.id })),
+      })),
+      ...quoted,
+    },
+  };
+  const result = await evolutionFetch<{ key?: { id?: string } }>(config, request.path, {
+    method: "POST", body: JSON.stringify(request.body),
+  });
+  if (!result.key?.id) throw new EvolutionApiError(502, "Resposta sem ID da mensagem");
+  return result.key.id;
+}
+
 export function getEvolutionQr(config: EvolutionCredentials) {
   return evolutionFetch<{ pairingCode?: string; code?: string; base64?: string; count?: number }>(
     config,

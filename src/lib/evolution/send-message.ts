@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/whatsapp/encryption";
 import { sanitizePhoneForMeta, isValidE164 } from "@/lib/whatsapp/phone-utils";
-import { sendEvolutionMedia, sendEvolutionText } from "./client";
+import { sendEvolutionInteractive, sendEvolutionMedia, sendEvolutionText } from "./client";
+import { interactivePayloadPreviewText } from "@/lib/whatsapp/interactive";
 import { SendMessageError, type SendMessageParams, type SendMessageResult } from "@/lib/whatsapp/send-message";
 
 export async function hasEvolutionConfig(db: SupabaseClient, accountId: string) {
@@ -48,6 +49,8 @@ export async function sendEvolutionMessageToConversation(
   try {
     if (params.messageType === "text") {
       externalId = await sendEvolutionText(credentials, number, params.contentText || "", quotedId);
+    } else if (params.messageType === "interactive" && params.interactivePayload) {
+      externalId = await sendEvolutionInteractive(credentials, { number, payload: params.interactivePayload, quotedId });
     } else if (["image", "video", "document", "audio"].includes(params.messageType)) {
       externalId = await sendEvolutionMedia(credentials, {
         number,
@@ -70,6 +73,7 @@ export async function sendEvolutionMessageToConversation(
     content_type: params.messageType,
     content_text: params.contentText || null,
     media_url: params.mediaUrl || null,
+    interactive_payload: params.interactivePayload || null,
     message_id: externalId,
     external_message_id: externalId,
     provider: "evolution",
@@ -82,7 +86,7 @@ export async function sendEvolutionMessageToConversation(
   if (saveError || !saved) throw new SendMessageError("db_error", "Mensagem enviada, mas não foi salva no CRM", 500);
 
   await db.from("conversations").update({
-    last_message_text: params.contentText || `[${params.messageType}]`,
+    last_message_text: params.interactivePayload ? interactivePayloadPreviewText(params.interactivePayload) : params.contentText || `[${params.messageType}]`,
     last_message_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...(params.sentByType === "diana" && params.scheduleCadence !== false

@@ -4,6 +4,7 @@ import { findExistingContact } from "@/lib/contacts/dedupe";
 import { sanitizePhoneForMeta } from "@/lib/whatsapp/phone-utils";
 import { sendEvolutionMessageToConversation } from "@/lib/evolution/send-message";
 import { isBehubCommercialTime, nextBehubCommercialTime } from "@/lib/behub/business-hours";
+import { serializeHermesFieldValue } from "@/lib/hermes/structured-fields";
 
 const STAGES = [
   "Novo lead", "Em atendimento", "Aguardando atendimento humano",
@@ -14,8 +15,9 @@ type Body = Record<string, unknown>;
 const str = (value: unknown) => typeof value === "string" ? value.trim() : "";
 
 export async function POST(request: Request) {
+  let ctx: Awaited<ReturnType<typeof requireApiKey>> | null = null;
   try {
-    const ctx = await requireApiKey(request, "hermes:operate");
+    ctx = await requireApiKey(request, "hermes:operate");
     const body = await request.json().catch(() => null) as Body | null;
     if (!body) return fail("bad_request", "Corpo JSON obrigatório", 400);
     const action = str(body.action);
@@ -85,6 +87,31 @@ export async function POST(request: Request) {
       const { data, error } = await ctx.supabase.from("contacts").update(allowed).eq("account_id", ctx.accountId).eq("id", contact.id).select("id,name,email,company,updated_at").single();
       if (error) return fail("internal", "Não foi possível atualizar o lead", 500);
       return ok(data);
+    }
+
+    if (action === "atualizar_campos_lead") {
+      const values = body.campos && typeof body.campos === "object" ? body.campos as Record<string, unknown> : null;
+      if (!values || Object.keys(values).length === 0) return fail("bad_request", "campos é obrigatório", 400);
+      const names = Object.keys(values).map((name) => name.trim()).filter(Boolean);
+      const { data: definitions, error: definitionsError } = await ctx.supabase
+        .from("custom_fields").select("id,field_name,field_type")
+        .eq("account_id", ctx.accountId).eq("hermes_writable", true).in("field_name", names);
+      if (definitionsError) return fail("internal", "Não foi possível validar os campos", 500);
+      if ((definitions?.length ?? 0) !== names.length) return fail("forbidden_field", "Um ou mais campos não são permitidos para o Hermes", 403);
+      const rows = (definitions ?? []).map((field) => ({
+        contact_id: contact.id,
+        custom_field_id: field.id,
+        value: serializeHermesFieldValue(field.field_type, values[field.field_name]),
+      }));
+      if (rows.some((row) => row.value === null)) return fail("bad_request", "Um ou mais valores não correspondem ao tipo do campo", 400);
+      const { error } = await ctx.supabase.from("contact_custom_values").upsert(rows, { onConflict: "contact_id,custom_field_id" });
+      if (error) return fail("internal", "Não foi possível atualizar os campos do lead", 500);
+      await ctx.supabase.from("behub_audit_log").insert({
+        account_id: ctx.accountId, actor_type: "diana", action: "atualizar_campos_lead",
+        entity_type: "contact", entity_id: contact.id, after_data: values,
+        metadata: { field_names: names },
+      });
+      return ok({ contact_id: contact.id, updated_fields: names });
     }
 
     if (action === "solicitar_mudanca_etapa") {
@@ -187,6 +214,17 @@ export async function POST(request: Request) {
 
     return fail("bad_request", "Ação Hermes não reconhecida", 400);
   } catch (error) {
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 500;
+    if (ctx && (!Number.isFinite(status) || status >= 500)) {
+      try {
+        await ctx.supabase.rpc("notify_account_operators", {
+          p_account_id: ctx.accountId, p_type: "hermes_failure",
+          p_title: "Falha em operação do Hermes",
+          p_body: "Uma operação do Hermes falhou e precisa de verificação.",
+          p_severity: "critical", p_metadata: { route: "/api/v1/hermes" },
+        });
+      } catch {}
+    }
     return toApiErrorResponse(error);
   }
 }

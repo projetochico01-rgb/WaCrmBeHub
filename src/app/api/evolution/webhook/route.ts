@@ -8,7 +8,18 @@ type Json = Record<string, any>;
 
 function digits(value: string) { return value.replace(/\D/g, ""); }
 
-function messageContent(message: Json): { type: string; text: string | null; media: string | null } {
+function messageContent(message: Json): { type: string; text: string | null; media: string | null; interactiveReplyId?: string } {
+  const buttonReply = message.buttonsResponseMessage;
+  if (buttonReply) return { type: "interactive", text: buttonReply.selectedDisplayText || buttonReply.selectedButtonId || null, media: null, interactiveReplyId: buttonReply.selectedButtonId || undefined };
+  const listReply = message.listResponseMessage?.singleSelectReply;
+  if (listReply) return { type: "interactive", text: message.listResponseMessage?.title || listReply.selectedRowId || null, media: null, interactiveReplyId: listReply.selectedRowId || undefined };
+  const nativeReply = message.interactiveResponseMessage?.nativeFlowResponseMessage;
+  if (nativeReply) {
+    let params: Json = {};
+    try { params = JSON.parse(nativeReply.paramsJson || "{}"); } catch {}
+    const id = params.id || params.row_id || params.button_id || params.selectedId;
+    return { type: "interactive", text: params.title || params.display_text || String(id || "Opção selecionada"), media: null, interactiveReplyId: id ? String(id) : undefined };
+  }
   if (message.conversation) return { type: "text", text: message.conversation, media: null };
   if (message.extendedTextMessage?.text) return { type: "text", text: message.extendedTextMessage.text, media: null };
   const options = [
@@ -87,6 +98,7 @@ export async function POST(request: Request) {
     content_type: parsed.type,
     content_text: parsed.text,
     media_url: parsed.media,
+    interactive_reply_id: parsed.interactiveReplyId || null,
     message_id: externalId,
     external_message_id: externalId,
     provider: "evolution",

@@ -1510,13 +1510,14 @@
       "templates": "Templates",
       "quick-replies": "Quick replies",
       "fields": "Fields & tags",
-      "deals": "Deals & currency",
+      "deals": "Default currency",
       "members": "Team members",
       "api": "API keys"
     },
     "groups": {
       "account": "Account",
-      "workspace": "Workspace"
+      "workspace": "Workspace",
+      "advanced": "Advanced"
     },
     "profile": {
       "title": "Your profile",

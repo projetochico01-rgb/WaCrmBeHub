@@ -1500,13 +1500,14 @@
       "templates": "Modelos",
       "quick-replies": "Respostas rápidas",
       "fields": "Campos e tags",
-      "deals": "Ofertas e moeda",
+      "deals": "Moeda padrão",
       "members": "Membros da equipe",
       "api": "Chaves de API"
     },
     "groups": {
       "account": "Conta",
-      "workspace": "Espaço de trabalho"
+      "workspace": "Espaço de trabalho",
+      "advanced": "Avançado"
     },
     "profile": {
       "title": "Seu perfil",
