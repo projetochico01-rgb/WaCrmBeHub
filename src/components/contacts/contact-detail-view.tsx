@@ -346,14 +346,14 @@ export function ContactDetailView({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="bg-popover border-border text-popover-foreground sm:max-w-lg w-full p-0"
+        className="w-full overflow-x-hidden border-border bg-popover p-0 text-popover-foreground"
       >
         {loading || !contact ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="size-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="flex flex-col h-full">
+          <div className="flex h-full min-w-0 flex-col">
             {/* Header */}
             <SheetHeader className="p-4 border-b border-border/50">
               <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export function ContactDetailView({
                       )}
                     </button>
                     {contact.email && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex min-w-0 items-center gap-1 break-all">
                         <Mail className="size-3" />
                         {contact.email}
                       </span>
@@ -400,8 +400,8 @@ export function ContactDetailView({
             </SheetHeader>
 
             {/* Tabs */}
-            <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
-              <TabsList className="bg-muted/50 border-b border-border mx-4 mt-3">
+            <Tabs defaultValue="details" className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <TabsList className="mx-4 mt-3 flex w-[calc(100%-2rem)] max-w-full justify-start overflow-x-auto border-b border-border bg-muted/50">
                 <TabsTrigger
                   value="details"
                   className="data-active:bg-muted data-active:text-primary text-muted-foreground"
