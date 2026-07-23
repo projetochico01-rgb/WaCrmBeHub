@@ -285,7 +285,7 @@ export function DealForm({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="bg-popover border-border text-popover-foreground sm:max-w-lg w-full p-0"
+        className="w-full overflow-x-hidden border-border bg-popover p-0 text-popover-foreground data-[side=right]:w-full data-[side=right]:sm:w-2/3 data-[side=right]:sm:max-w-none data-[side=right]:lg:w-[640px] data-[side=right]:xl:w-[720px]"
       >
         <div className="flex h-full flex-col">
           <SheetHeader className="border-b border-border/50 p-4">
@@ -294,7 +294,7 @@ export function DealForm({
             </SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="min-w-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto p-4">
             <div className="grid gap-2">
               <Label className="text-muted-foreground">{t("title")}</Label>
               <Input
@@ -391,8 +391,8 @@ export function DealForm({
               </div>
             )}
 
-            <div className="grid grid-cols-[1fr_110px] gap-3">
-              <div className="grid gap-2">
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_110px]">
+              <div className="grid min-w-0 gap-2">
                 <Label className="text-muted-foreground">{t("value")}</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
